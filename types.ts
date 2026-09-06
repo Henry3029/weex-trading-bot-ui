@@ -1,3 +1,4 @@
+export type EngineType = 'MAJOR_ENGINE' | 'ALT_ENGINE' | 'MEME_ENGINE';
 export type EngineStatusType = 'IN_POSITION' | 'HUNTING' | 'STOPPED' | 'ERROR';
 
 export interface EngineStatus {
