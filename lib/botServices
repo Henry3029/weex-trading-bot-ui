@@ -1,4 +1,4 @@
-import { EngineStatus, SystemLog } from '@/types';
+import { EngineStatus, SystemLog } from '../types';
 
 // Mock Initial Data
 export const INITIAL_ENGINES: EngineStatus[] = [
