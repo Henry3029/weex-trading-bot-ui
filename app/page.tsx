@@ -1,3 +1,4 @@
+"use client"
 import { INITIAL_ENGINES, MOCK_LOGS } from '@/lib/botService';
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
