@@ -5,11 +5,15 @@
   --foreground: #171717;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@theme {
+  /* Simple colors */
+  --color-midnight: #0F172A;
+  --color-card-dark: #1E293B;
+
+  /* Color scale for gold */
+  --color-gold-400: #F1C40F;
+  --color-gold-500: #D4AF37;
+  --color-gold-600: #B7950B;
 }
 
 @media (prefers-color-scheme: dark) {
