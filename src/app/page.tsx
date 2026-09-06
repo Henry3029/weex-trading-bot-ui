@@ -1,5 +1,5 @@
 "use client"
-import { INITIAL_ENGINES, MOCK_LOGS } from './lib/botServices';
+import { INITIAL_ENGINES, MOCK_LOGS } from '@/lib/botServices';
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { 
@@ -17,7 +17,7 @@ import {
   Lock,
   Layers
 } from 'lucide-react';
-import { EngineStatus, SystemLog, EngineType } from '../types';
+import { EngineStatus, SystemLog, EngineType } from '@/types';
 
 
 const socket = io('http://localhost:3000'); 
