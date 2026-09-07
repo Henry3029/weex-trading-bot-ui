@@ -18,12 +18,51 @@ import {
 } from 'lucide-react';
 import { EngineStatus, SystemLog, EngineType } from '@/types';
 
-const INITIAL_ENGINES = [
-  { id: 'MOMENTUM', name: 'Momentum Engine', focusAssets: ['BTC/USDT', 'ETH/USDT'], currentAsset: 'BTC/USDT', currentPrice: 0, pnlPercentage: 0, status: 'SCANNING', allocatedCapital: 0 },
-  { id: 'TREND', name: 'Trend Engine', focusAssets: ['SOL/USDT', 'XRP/USDT'], currentAsset: 'SOL/USDT', currentPrice: 0, pnlPercentage: 0, status: 'SCANNING', allocatedCapital: 0 },
-  { id: 'BREAKOUT', name: 'Breakout Engine', focusAssets: ['DOGE/USDT', 'BNB/USDT'], currentAsset: 'DOGE/USDT', currentPrice: 0, pnlPercentage: 0, status: 'SCANNING', allocatedCapital: 0 },
-] as unknown as EngineStatus[];
-const MOCK_LOGS = [] as SystemLog[];
+export const INITIAL_ENGINES: EngineStatus[] = [
+  {
+    id: 'MAJOR_ENGINE',
+    name: 'Major Assets Engine',
+    focusAssets: ['BTC/USDT', 'ETH/USDT', 'BNB/USDT'],
+    currentAsset: 'BTC/USDT',
+    status: 'IN_POSITION',
+    pnlPercentage: 1.45,
+    entryPrice: 64200.00,
+    currentPrice: 65130.50,
+    takeProfitPrice: 65484.00,
+    stopLossPrice: 63558.00,
+    allocatedCapital: 500
+  },
+  {
+    id: 'ALT_ENGINE',
+    name: 'Altcoin Engine',
+    focusAssets: ['DOGE/USDT', 'XRP/USDT', 'AVAX/USDT', 'ZEC/USDT'],
+    currentAsset: 'DOGE/USDT',
+    status: 'HUNTING',
+    pnlPercentage: 0.00,
+    currentPrice: 0.1245,
+    allocatedCapital: 250
+  },
+  {
+    id: 'MEME_ENGINE',
+    name: 'Meme/High-Vol Engine',
+    focusAssets: ['BTW/USDT'],
+    currentAsset: 'BTW/USDT',
+    status: 'IN_POSITION',
+    pnlPercentage: -0.42,
+    entryPrice: 0.0850,
+    currentPrice: 0.0846,
+    takeProfitPrice: 0.0867,
+    stopLossPrice: 0.0841,
+    allocatedCapital: 0
+  }
+];
+
+const MOCK_LOGS = [ 
+ { id: '1', engine: 'MAJOR_ENGINE', type: 'TAKE_PROFIT', message: 'Step-Up Lock adjusted SL to entry price (+1.00% secured).', timestamp: '10:42 AM' },
+  { id: '2', engine: 'ALT_ENGINE', type: 'INFO', message: '3-Hour Pivot window elapsed. Switched active monitoring focus to DOGE/USDT.', timestamp: '10:30 AM' },
+  { id: '3', engine: 'MEME_ENGINE', type: 'BUY', message: 'EMA Crossover buy order executed for BTW/USDT at $0.0850.', timestamp: '10:15 AM' },
+  { id: '4', engine: 'MAJOR_ENGINE', type: 'STOP_LOSS', message: 'Hard Stop Loss triggered on previous trade (-1.00%). Pivot executed.', timestamp: '08:20 AM' },
+] as SystemLog[];
 
 
 const socket = io('http://localhost:3000'); 
