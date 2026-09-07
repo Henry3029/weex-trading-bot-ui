@@ -1,5 +1,4 @@
 "use client"
-import { INITIAL_ENGINES, MOCK_LOGS } from '@/lib/botServices';
 import React, { useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
 import { 
@@ -18,6 +17,13 @@ import {
   Layers
 } from 'lucide-react';
 import { EngineStatus, SystemLog, EngineType } from '@/types';
+
+const INITIAL_ENGINES = [
+  { id: 'MOMENTUM', name: 'Momentum Engine', focusAssets: ['BTC/USDT', 'ETH/USDT'], currentAsset: 'BTC/USDT', currentPrice: 0, pnlPercentage: 0, status: 'SCANNING', allocatedCapital: 0 },
+  { id: 'TREND', name: 'Trend Engine', focusAssets: ['SOL/USDT', 'XRP/USDT'], currentAsset: 'SOL/USDT', currentPrice: 0, pnlPercentage: 0, status: 'SCANNING', allocatedCapital: 0 },
+  { id: 'BREAKOUT', name: 'Breakout Engine', focusAssets: ['DOGE/USDT', 'BNB/USDT'], currentAsset: 'DOGE/USDT', currentPrice: 0, pnlPercentage: 0, status: 'SCANNING', allocatedCapital: 0 },
+] as unknown as EngineStatus[];
+const MOCK_LOGS = [] as SystemLog[];
 
 
 const socket = io('http://localhost:3000'); 
