@@ -25,8 +25,7 @@ import { EngineStatus, SystemLog, EngineType } from '@/types';
 const API_BASE_URL = typeof window !== 'undefined' 
   ? `http://${window.location.hostname}:3001` 
   : 'http://localhost:3001';
-
-const socket = io(API_BASE_URL); 
+const socket = io(API_BASE_URL);
 
 export default function App() {
   // 1. All State Definitions (Starts Unloaded / Empty)
