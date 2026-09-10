@@ -17,21 +17,21 @@ import {
   Layers,
   AlertCircle
 } from 'lucide-react';
+
 import AuthModal from '@/components/AuthModal';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { EngineStatus, SystemLog, EngineType } from '@/types';
 
 // Dynamic base URL targeting backend port 3001
 const API_BASE_URL = typeof window !== 'undefined' 
   ? `http://${window.location.hostname}:3001` 
   : 'http://localhost:3001';
-const socket = io(API_BASE_URL);
 
 export default function App() {
-  // 1. All State Definitions (Starts Unloaded / Empty)
+  // 1. All State Definitions
   const [engines, setEngines] = useState<EngineStatus[]>([]);
   const [logs, setLogs] = useState<SystemLog[]>([]);
-  const [user, setUser] = useState<{ id: string; email: string; freeUsdtBalance: number } | null>(null);
+  const [user, setUser] = useState<{ id: string; walletAddress: string; freeUsdtBalance: number } | null>(null);
   
   const [isLoadingEngines, setIsLoadingEngines] = useState<boolean>(true);
   const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
@@ -45,7 +45,7 @@ export default function App() {
   const freeUsdt = user ? user.freeUsdtBalance : 0.00;
   const allocatedUsdt = engines.reduce((acc, curr) => acc + (curr.allocatedCapital || 0), 0);
 
-  // 3. Fetch Initial Data from Backend (No Hardcoded Initial Values)
+  // 3. Fetch Initial Data from Backend
   useEffect(() => {
     const fetchInitialData = async () => {
       setIsLoadingEngines(true);
@@ -86,7 +86,42 @@ export default function App() {
     fetchInitialData();
   }, []);
 
-  // 4. Handlers
+  // 4. WebSocket Real-Time Subscriptions
+  useEffect(() => {
+    const socket: Socket = io(API_BASE_URL, {
+      transports: ['websocket', 'polling']
+    });
+
+    socket.on('engine_state_update', (data) => {
+      setEngines((prevEngines) =>
+        prevEngines.map((engine) => {
+          if (engine.id === data.engineId) {
+            return {
+              ...engine,
+              currentAsset: data.currentAsset ?? engine.currentAsset,
+              currentPrice: data.currentPrice ?? engine.currentPrice,
+              pnlPercentage: data.pnlPercentage ?? engine.pnlPercentage,
+              status: data.status ?? engine.status,
+              entryPrice: data.entryPrice ?? engine.entryPrice,
+              takeProfitPrice: data.takeProfitPrice ?? engine.takeProfitPrice,
+              stopLossPrice: data.stopLossPrice ?? engine.stopLossPrice
+            };
+          }
+          return engine;
+        })
+      );
+    });
+
+    socket.on('engine_log', (newLog: SystemLog) => {
+      setLogs((prevLogs) => [newLog, ...prevLogs.slice(0, 19)]);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  // 5. Handlers
   const handleLogout = () => {
     localStorage.removeItem('auth_token');
     setUser(null);
@@ -115,12 +150,14 @@ export default function App() {
       setIsSubmittingAlloc(true);
       const token = localStorage.getItem('auth_token');
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const response = await fetch(`${API_BASE_URL}/engine/allocate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers,
         body: JSON.stringify({
           userId: user.id,
           engineName: engineId,
@@ -148,38 +185,6 @@ export default function App() {
       setIsSubmittingAlloc(false);
     }
   };
-
-  // 5. WebSocket Real-Time Subscriptions
-  useEffect(() => {
-    socket.on('engine_state_update', (data) => {
-      setEngines((prevEngines) =>
-        prevEngines.map((engine) => {
-          if (engine.id === data.engineId) {
-            return {
-              ...engine,
-              currentAsset: data.currentAsset ?? engine.currentAsset,
-              currentPrice: data.currentPrice ?? engine.currentPrice,
-              pnlPercentage: data.pnlPercentage ?? engine.pnlPercentage,
-              status: data.status ?? engine.status,
-              entryPrice: data.entryPrice ?? engine.entryPrice,
-              takeProfitPrice: data.takeProfitPrice ?? engine.takeProfitPrice,
-              stopLossPrice: data.stopLossPrice ?? engine.stopLossPrice
-            };
-          }
-          return engine;
-        })
-      );
-    });
-
-    socket.on('engine_log', (newLog: SystemLog) => {
-      setLogs((prevLogs) => [newLog, ...prevLogs.slice(0, 19)]);
-    });
-
-    return () => {
-      socket.off('engine_state_update');
-      socket.off('engine_log');
-    };
-  }, []);
 
   // 6. UI Render
   return (
@@ -218,30 +223,37 @@ export default function App() {
               <span className="font-semibold text-gold-500">${allocatedUsdt.toFixed(2)} USDT</span>
             </div>
 
-            {/* Profile / Login Toggle */}
-            {user ? (
-              <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
-                <div className="text-right">
-                  <p className="text-xs font-semibold text-white">{user.email}</p>
-                  <p className="text-[11px] text-gold-500">${user.freeUsdtBalance.toFixed(2)} USDT</p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 rounded-lg"
-                  title="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="flex items-center gap-2 bg-gold-500 hover:bg-gold-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all"
-              >
-                <User className="w-4 h-4" /> Sign In / Register
-              </button>
-            )}
-          </div>
+            {/* Profile / Wallet Toggle */}
+{user ? (
+  <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
+    <div className="text-right">
+      {/* Displays truncated wallet address: 0x1234...5678 */}
+      <p className="text-xs font-mono font-semibold text-white">
+        {user.walletAddress 
+          ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`
+          : 'Connected'}
+      </p>
+      <p className="text-[11px] font-medium text-amber-500">
+        ${user.freeUsdtBalance.toFixed(2)} USDT
+      </p>
+    </div>
+    <button
+      onClick={handleLogout}
+      className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
+      title="Disconnect Wallet"
+    >
+      <LogOut className="w-4 h-4" />
+    </button>
+  </div>
+) : (
+  <button
+    onClick={() => setIsAuthOpen(true)}
+    className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
+  >
+    <Wallet className="w-4 h-4" />
+    <span>Connect Wallet</span>
+  </button>
+)}
 
           {/* Mobile Menu Toggle */}
           <button 
