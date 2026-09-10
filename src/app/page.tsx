@@ -186,9 +186,9 @@ export default function App() {
     }
   };
 
-  // 6. UI Render
+// 6. UI Render
   return (
-    <div className="min-h-screen bg-midnight text-slate-100 font-sans pb-12">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-12">
       {/* Auth Modal Overlay */}
       <AuthModal
         isOpen={isAuthOpen}
@@ -200,11 +200,13 @@ export default function App() {
       <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gold-500/10 border border-gold-500/30 flex items-center justify-center">
-              <Zap className="w-6 h-6 text-gold-500" />
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+              <Zap className="w-6 h-6 text-amber-500" />
             </div>
             <div>
-              <h1 className="font-bold text-lg tracking-wide text-white">WEEX <span className="text-gold-500">AI BOT</span></h1>
+              <h1 className="font-bold text-lg tracking-wide text-white">
+                WEEX <span className="text-amber-500">AI BOT</span>
+              </h1>
               <p className="text-xs text-slate-400 hidden sm:block">Automated Multi-Engine Trading Vaults</p>
             </div>
           </div>
@@ -212,48 +214,48 @@ export default function App() {
           {/* Desktop Wallet Stats & User Auth */}
           <div className="hidden md:flex items-center space-x-6">
             <div className="flex items-center space-x-2 bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700">
-              <Wallet className="w-4 h-4 text-gold-500" />
+              <Wallet className="w-4 h-4 text-amber-500" />
               <span className="text-xs text-slate-400">Available:</span>
               <span className="font-semibold text-white">${freeUsdt.toFixed(2)} USDT</span>
             </div>
 
-            <div className="flex items-center space-x-2 bg-gold-500/10 px-4 py-2 rounded-lg border border-gold-500/30">
-              <Activity className="w-4 h-4 text-gold-500" />
-              <span className="text-xs text-gold-400">Active Pool:</span>
-              <span className="font-semibold text-gold-500">${allocatedUsdt.toFixed(2)} USDT</span>
+            <div className="flex items-center space-x-2 bg-amber-500/10 px-4 py-2 rounded-lg border border-amber-500/30">
+              <Activity className="w-4 h-4 text-amber-500" />
+              <span className="text-xs text-amber-400">Active Pool:</span>
+              <span className="font-semibold text-amber-500">${allocatedUsdt.toFixed(2)} USDT</span>
             </div>
 
             {/* Profile / Wallet Toggle */}
-{user ? (
-  <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
-    <div className="text-right">
-      {/* Displays truncated wallet address: 0x1234...5678 */}
-      <p className="text-xs font-mono font-semibold text-white">
-        {user.walletAddress 
-          ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`
-          : 'Connected'}
-      </p>
-      <p className="text-[11px] font-medium text-amber-500">
-        ${user.freeUsdtBalance.toFixed(2)} USDT
-      </p>
-    </div>
-    <button
-      onClick={handleLogout}
-      className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
-      title="Disconnect Wallet"
-    >
-      <LogOut className="w-4 h-4" />
-    </button>
-  </div>
-) : (
-  <button
-    onClick={() => setIsAuthOpen(true)}
-    className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
-  >
-    <Wallet className="w-4 h-4" />
-    <span>Connect Wallet</span>
-  </button>
-)}
+            {user ? (
+              <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
+                <div className="text-right">
+                  <p className="text-xs font-mono font-semibold text-white">
+                    {user.walletAddress 
+                      ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`
+                      : 'Connected'}
+                  </p>
+                  <p className="text-[11px] font-medium text-amber-500">
+                    ${user.freeUsdtBalance.toFixed(2)} USDT
+                  </p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
+                  title="Disconnect Wallet"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthOpen(true)}
+                className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
+              >
+                <Wallet className="w-4 h-4" />
+                <span>Connect Wallet</span>
+              </button>
+            )}
+          </div>
 
           {/* Mobile Menu Toggle */}
           <button 
@@ -272,8 +274,8 @@ export default function App() {
               <span className="font-semibold text-white">${freeUsdt.toFixed(2)} USDT</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-800">
-              <span className="text-sm text-gold-400">Active Capital:</span>
-              <span className="font-semibold text-gold-500">${allocatedUsdt.toFixed(2)} USDT</span>
+              <span className="text-sm text-amber-400">Active Capital:</span>
+              <span className="font-semibold text-amber-500">${allocatedUsdt.toFixed(2)} USDT</span>
             </div>
             <div className="pt-2">
               {user ? (
@@ -305,7 +307,7 @@ export default function App() {
 
       {/* HERO SECTION */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-gold-500/20 rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-amber-500/20 rounded-2xl p-6 sm:p-8 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
           <div className="max-w-2xl">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/30 mb-4">
@@ -326,7 +328,7 @@ export default function App() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-white flex items-center gap-2">
-            <Layers className="w-5 h-5 text-gold-500" /> Active Strategy Engines
+            <Layers className="w-5 h-5 text-amber-500" /> Active Strategy Engines
           </h3>
           <span className="text-xs text-slate-400 flex items-center gap-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live API Sync
@@ -335,7 +337,7 @@ export default function App() {
 
         {isLoadingEngines ? (
           <div className="p-12 text-center bg-slate-900/60 border border-slate-800 rounded-xl">
-            <RefreshCw className="w-8 h-8 text-gold-500 animate-spin mx-auto mb-3" />
+            <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-3" />
             <p className="text-sm text-slate-400">Loading live engine state from backend...</p>
           </div>
         ) : engines.length === 0 ? (
@@ -352,7 +354,7 @@ export default function App() {
               return (
                 <div 
                   key={engine.id} 
-                  className="bg-cardDark border border-slate-800 hover:border-gold-500/40 transition-all rounded-xl p-5 flex flex-col justify-between relative shadow-lg"
+                  className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 transition-all rounded-xl p-5 flex flex-col justify-between relative shadow-lg"
                 >
                   <div>
                     <div className="flex items-center justify-between pb-3 border-b border-slate-800">
@@ -397,7 +399,7 @@ export default function App() {
                         </>
                       ) : (
                         <div className="bg-slate-900/40 p-3 rounded-lg border border-slate-800/80 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-gold-500" />
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-500" />
                           Scanning market order books for entry signal...
                         </div>
                       )}
@@ -407,7 +409,7 @@ export default function App() {
                   <div className="mt-6 pt-4 border-t border-slate-800">
                     <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
                       <span>Your Engine Allocation:</span>
-                      <span className="font-semibold text-gold-500">${(engine.allocatedCapital || 0).toFixed(2)} USDT</span>
+                      <span className="font-semibold text-amber-500">${(engine.allocatedCapital || 0).toFixed(2)} USDT</span>
                     </div>
 
                     {selectedEngineForAlloc === engine.id ? (
@@ -425,12 +427,12 @@ export default function App() {
                             placeholder="Amount USDT"
                             value={allocInput}
                             onChange={(e) => setAllocInput(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-gold-500 font-mono"
+                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
                           />
                           <button
                             disabled={isSubmittingAlloc}
                             onClick={() => handleAllocate(engine.id as EngineType)}
-                            className="bg-gold-500 hover:bg-gold-600 disabled:opacity-50 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-center"
+                            className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-center"
                           >
                             {isSubmittingAlloc ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Confirm'}
                           </button>
@@ -451,9 +453,9 @@ export default function App() {
                           setSelectedEngineForAlloc(engine.id as EngineType);
                           setAllocError('');
                         }}
-                        className="w-full bg-slate-800 hover:bg-gold-500 hover:text-slate-950 border border-slate-700 hover:border-gold-500 text-slate-200 font-semibold py-2 rounded-lg text-xs transition-all flex items-center justify-center gap-1"
+                        className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold text-xs rounded-lg transition-colors border border-slate-700/60"
                       >
-                        <Lock className="w-3 h-3" /> Allocate Trading Capital
+                        Allocate Capital
                       </button>
                     )}
                   </div>
@@ -463,44 +465,6 @@ export default function App() {
           </div>
         )}
       </main>
-
-      {/* REAL-TIME SYSTEM LOGS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-12">
-        <div className="bg-cardDark border border-slate-800 rounded-xl p-5 shadow-lg">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800">
-            <h3 className="font-bold text-white text-base flex items-center gap-2">
-              <Activity className="w-4 h-4 text-gold-500" /> Live AI Engine Decisions
-            </h3>
-            <span className="text-xs text-slate-500">Auto-updating websocket feed</span>
-          </div>
-
-          <div className="mt-4 space-y-3">
-            {logs.length === 0 ? (
-              <p className="text-xs text-slate-500 font-mono">No active engine logs recorded yet.</p>
-            ) : (
-              logs.map((log) => (
-                <div 
-                  key={log.id} 
-                  className="flex items-start justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-800/80 text-xs gap-4"
-                >
-                  <div className="flex items-start gap-2.5">
-                    <span className={`px-2 py-0.5 rounded font-mono font-bold text-[10px] uppercase mt-0.5 ${
-                      log.type === 'TAKE_PROFIT' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
-                      log.type === 'STOP_LOSS' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
-                      log.type === 'BUY' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
-                      'bg-slate-800 text-slate-400'
-                    }`}>
-                      {log.engine ? log.engine.split('_')[0] : 'SYS'}
-                    </span>
-                    <p className="text-slate-300 leading-relaxed">{log.message}</p>
-                  </div>
-                  <span className="text-slate-500 whitespace-nowrap text-[11px]">{log.timestamp}</span>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
