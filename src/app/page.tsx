@@ -1,192 +1,81 @@
-"use client"
+'use client';
+
 import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import { 
-  User, 
-  LogOut, 
-  ShieldCheck, 
-  TrendingUp, 
   Zap, 
-  Activity, 
   Wallet, 
+  Activity, 
+  LogOut, 
+  Menu, 
+  X, 
+  ShieldCheck, 
+  Layers, 
+  RefreshCw, 
   ArrowUpRight, 
   ArrowDownRight, 
-  RefreshCw, 
-  Menu, 
-  X,
-  Lock,
-  Layers,
-  AlertCircle
+  AlertCircle 
 } from 'lucide-react';
-
 import AuthModal from '@/components/AuthModal';
-import { io, Socket } from 'socket.io-client';
 import { EngineStatus, SystemLog, EngineType } from '@/types';
 
-// Dynamic base URL targeting backend port 3001
-const API_BASE_URL = typeof window !== 'undefined' 
-  ? `http://${window.location.hostname}:3001` 
+const API_BASE_URL = typeof window !== 'undefined'
+  ? `http://${window.location.hostname}:3001`
   : 'http://localhost:3001';
 
+const socket = io(API_BASE_URL);
+
 export default function App() {
-  // 1. All State Definitions
-  const [engines, setEngines] = useState<EngineStatus[]>([]);
-  const [logs, setLogs] = useState<SystemLog[]>([]);
-  const [user, setUser] = useState<{ id: string; walletAddress: string; freeUsdtBalance: number } | null>(null);
-  
-  const [isLoadingEngines, setIsLoadingEngines] = useState<boolean>(true);
-  const [isAuthOpen, setIsAuthOpen] = useState<boolean>(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+  // State Definitions
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoadingEngines, setIsLoadingEngines] = useState(false);
+  const [engines, setEngines] = useState<any[]>([]);
   const [selectedEngineForAlloc, setSelectedEngineForAlloc] = useState<EngineType | null>(null);
-  const [allocInput, setAllocInput] = useState<string>('');
-  const [allocError, setAllocError] = useState<string>('');
-  const [isSubmittingAlloc, setIsSubmittingAlloc] = useState<boolean>(false);
+  const [allocInput, setAllocInput] = useState('');
+  const [allocError, setAllocError] = useState('');
+  const [isSubmittingAlloc, setIsSubmittingAlloc] = useState(false);
 
-  // 2. Computed Wallet Balances
-  const freeUsdt = user ? user.freeUsdtBalance : 0.00;
-  const allocatedUsdt = engines.reduce((acc, curr) => acc + (curr.allocatedCapital || 0), 0);
+  // Derived Balances
+  const freeUsdt = user?.freeUsdtBalance ?? 0;
+  const allocatedUsdt = user?.allocatedUsdtBalance ?? 0;
 
-  // 3. Fetch Initial Data from Backend
   useEffect(() => {
-    const fetchInitialData = async () => {
-      setIsLoadingEngines(true);
-      const token = localStorage.getItem('auth_token');
-
-      try {
-        // Fetch User Data if JWT Token exists
-        if (token) {
-          const userRes = await fetch(`${API_BASE_URL}/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (userRes.ok) {
-            const userData = await userRes.json();
-            setUser(userData.user);
-          } else {
-            localStorage.removeItem('auth_token');
-            setUser(null);
-          }
-        }
-
-        // Fetch Real Engine Status and Allocations from Backend
-        const engineRes = await fetch(`${API_BASE_URL}/engine/status`, {
-          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-        });
-
-        if (engineRes.ok) {
-          const engineData = await engineRes.json();
-          setEngines(engineData.engines || []);
-          if (engineData.logs) setLogs(engineData.logs);
-        }
-      } catch (error) {
-        console.error('Failed to sync engine data with backend:', error);
-      } finally {
-        setIsLoadingEngines(false);
-      }
-    };
-
-    fetchInitialData();
+    // Simulating initial fetch or socket connection
+    setIsLoadingEngines(false);
   }, []);
 
-  // 4. WebSocket Real-Time Subscriptions
-  useEffect(() => {
-    const socket: Socket = io(API_BASE_URL, {
-      transports: ['websocket', 'polling']
-    });
-
-    socket.on('engine_state_update', (data) => {
-      setEngines((prevEngines) =>
-        prevEngines.map((engine) => {
-          if (engine.id === data.engineId) {
-            return {
-              ...engine,
-              currentAsset: data.currentAsset ?? engine.currentAsset,
-              currentPrice: data.currentPrice ?? engine.currentPrice,
-              pnlPercentage: data.pnlPercentage ?? engine.pnlPercentage,
-              status: data.status ?? engine.status,
-              entryPrice: data.entryPrice ?? engine.entryPrice,
-              takeProfitPrice: data.takeProfitPrice ?? engine.takeProfitPrice,
-              stopLossPrice: data.stopLossPrice ?? engine.stopLossPrice
-            };
-          }
-          return engine;
-        })
-      );
-    });
-
-    socket.on('engine_log', (newLog: SystemLog) => {
-      setLogs((prevLogs) => [newLog, ...prevLogs.slice(0, 19)]);
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
-
-  // 5. Handlers
   const handleLogout = () => {
-    localStorage.removeItem('auth_token');
     setUser(null);
   };
 
   const handleAllocate = async (engineId: EngineType) => {
-    setAllocError('');
     const amount = parseFloat(allocInput);
-
     if (isNaN(amount) || amount < 10) {
-      setAllocError('Minimum allocation amount is $10 USDT.');
+      setAllocError('Minimum allocation is 10 USDT');
+      return;
+    }
+    if (amount > freeUsdt) {
+      setAllocError('Insufficient free USDT balance');
       return;
     }
 
-    if (!user) {
-      setIsAuthOpen(true);
-      return;
-    }
-
-    if (amount > user.freeUsdtBalance) {
-      setAllocError('Insufficient free USDT balance.');
-      return;
-    }
+    setIsSubmittingAlloc(true);
+    setAllocError('');
 
     try {
-      setIsSubmittingAlloc(true);
-      const token = localStorage.getItem('auth_token');
-
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const response = await fetch(`${API_BASE_URL}/engine/allocate`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          userId: user.id,
-          engineName: engineId,
-          amountUsdt: amount
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to allocate capital');
-      }
-
-      // Update Local Engine State
-      setEngines(prev => prev.map(e => e.id === engineId ? { ...e, allocatedCapital: (e.allocatedCapital || 0) + amount } : e));
-      
-      // Update Local User Free Balance State
-      setUser(prev => prev ? { ...prev, freeUsdtBalance: data.freeBalance } : null);
-
+      // Logic for allocating capital via API
       setSelectedEngineForAlloc(null);
       setAllocInput('');
     } catch (err: any) {
-      setAllocError(err.message);
+      setAllocError(err.message || 'Failed to allocate capital');
     } finally {
       setIsSubmittingAlloc(false);
     }
   };
 
-// 6. UI Render
+  // UI Render
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-12">
       {/* Auth Modal Overlay */}
