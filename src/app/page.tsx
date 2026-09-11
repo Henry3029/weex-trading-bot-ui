@@ -78,140 +78,137 @@ export default function App() {
   // UI Render
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-12">
-      {/* Auth Modal Overlay */}
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        onAuthSuccess={(userData) => setUser(userData)}
-      />
+     {/* Auth Modal Overlay (Handles Login / API Key Registration) */}
+<AuthModal
+  isOpen={isAuthOpen}
+  onClose={() => setIsAuthOpen(false)}
+  onAuthSuccess={(userData) => setUser(userData)}
+  apiBaseUrl={API_BASE_URL}
+/>
 
-      {/* HEADER / NAVIGATION */}
-      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-              <Zap className="w-6 h-6 text-amber-500" />
-            </div>
-            <div>
-              <h1 className="font-bold text-lg tracking-wide text-white">
-                WEEX <span className="text-amber-500">AI BOT</span>
-              </h1>
-              <p className="text-xs text-slate-400 hidden sm:block">Automated Multi-Engine Trading Vaults</p>
-            </div>
-          </div>
+{/* HEADER / NAVIGATION */}
+<header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <div className="flex items-center space-x-3">
+      <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+        <Zap className="w-6 h-6 text-amber-500" />
+      </div>
+      <div>
+        <h1 className="font-bold text-lg tracking-wide text-white">
+          WEEX <span className="text-amber-500">AI BOT</span>
+        </h1>
+        <p className="text-xs text-slate-400 hidden sm:block">Automated Multi-Engine Trading Vaults</p>
+      </div>
+    </div>
 
-          {/* Desktop Wallet Stats & User Auth */}
-          <div className="hidden md:flex items-center space-x-6">
-            <div className="flex items-center space-x-2 bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700">
-              <Wallet className="w-4 h-4 text-amber-500" />
-              <span className="text-xs text-slate-400">Available:</span>
-              <span className="font-semibold text-white">${freeUsdt.toFixed(2)} USDT</span>
-            </div>
+    {/* Desktop Balance Stats & User Auth */}
+    <div className="hidden md:flex items-center space-x-6">
+      <div className="flex items-center space-x-2 bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700">
+        <Activity className="w-4 h-4 text-amber-500" />
+        <span className="text-xs text-slate-400">Available:</span>
+        <span className="font-semibold text-white">${freeUsdt.toFixed(2)} USDT</span>
+      </div>
 
-            <div className="flex items-center space-x-2 bg-amber-500/10 px-4 py-2 rounded-lg border border-amber-500/30">
-              <Activity className="w-4 h-4 text-amber-500" />
-              <span className="text-xs text-amber-400">Active Pool:</span>
-              <span className="font-semibold text-amber-500">${allocatedUsdt.toFixed(2)} USDT</span>
-            </div>
+      <div className="flex items-center space-x-2 bg-amber-500/10 px-4 py-2 rounded-lg border border-amber-500/30">
+        <ShieldCheck className="w-4 h-4 text-amber-500" />
+        <span className="text-xs text-amber-400">Active Pool:</span>
+        <span className="font-semibold text-amber-500">${allocatedUsdt.toFixed(2)} USDT</span>
+      </div>
 
-            {/* Profile / Wallet Toggle */}
-            {user ? (
-              <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
-                <div className="text-right">
-                  <p className="text-xs font-mono font-semibold text-white">
-                    {user.walletAddress 
-                      ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`
-                      : 'Connected'}
-                  </p>
-                  <p className="text-[11px] font-medium text-amber-500">
-                    ${user.freeUsdtBalance.toFixed(2)} USDT
-                  </p>
-                </div>
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
-                  title="Disconnect Wallet"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
-              >
-                <Wallet className="w-4 h-4" />
-                <span>Connect Wallet</span>
-              </button>
-            )}
-          </div>
-
-          {/* Mobile Menu Toggle */}
-          <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-            className="md:hidden text-slate-400 hover:text-white"
-          >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Dropdown */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-800 bg-slate-900 px-4 py-4 space-y-3">
-            <div className="flex justify-between items-center py-2 border-b border-slate-800">
-              <span className="text-sm text-slate-400">Free Balance:</span>
-              <span className="font-semibold text-white">${freeUsdt.toFixed(2)} USDT</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-800">
-              <span className="text-sm text-amber-400">Active Capital:</span>
-              <span className="font-semibold text-amber-500">${allocatedUsdt.toFixed(2)} USDT</span>
-            </div>
-            <div className="pt-2">
-              {user ? (
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-mono text-white">
-                    {user.walletAddress 
-                      ? `${user.walletAddress.slice(0, 6)}...${user.walletAddress.slice(-4)}`
-                      : 'Connected'}
-                  </span>
-                  <button
-                    onClick={handleLogout}
-                    className="text-xs text-rose-400 flex items-center gap-1 hover:text-rose-300 transition-colors"
-                  >
-                    <LogOut className="w-3 h-3" /> Disconnect
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setIsAuthOpen(true)}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
-                >
-                  <Wallet className="w-4 h-4" /> Connect Wallet
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* HERO SECTION */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-amber-500/20 rounded-2xl p-6 sm:p-8 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
-          <div className="max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/30 mb-4">
-              <ShieldCheck className="w-3.5 h-3.5" /> High-Tech Risk Management Protocol
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Institutional Automation. <br className="hidden sm:inline" />
-              <span className="text-amber-500">Zero Manual Trades Required.</span>
-            </h2>
-            <p className="text-sm sm:text-base text-slate-300 mt-3 leading-relaxed">
-              Select an engine vault to join. Our dual-step EMA crossover mechanism continuously hunts high-probability momentum entries while strictly protecting capital with an automated 1.00% Hard Stop.
+      {/* User Account / Login Toggle */}
+      {user ? (
+        <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
+          <div className="text-right">
+            <p className="text-xs font-semibold text-white">
+              {user.email || user.username || 'Trader Account'}
+            </p>
+            <p className="text-[11px] font-medium text-amber-500">
+              WEEX API Connected
             </p>
           </div>
+          <button
+            onClick={handleLogout}
+            className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
+            title="Log Out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
-      </section>
+      ) : (
+        <button
+          onClick={() => setIsAuthOpen(true)}
+          className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
+        >
+          <Key className="w-4 h-4" />
+          <span>Sign In / Connect API</span>
+        </button>
+      )}
+    </div>
+
+    {/* Mobile Menu Toggle */}
+    <button 
+      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+      className="md:hidden text-slate-400 hover:text-white"
+    >
+      {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+    </button>
+  </div>
+
+  {/* Mobile Dropdown */}
+  {isMobileMenuOpen && (
+    <div className="md:hidden border-t border-slate-800 bg-slate-900 px-4 py-4 space-y-3">
+      <div className="flex justify-between items-center py-2 border-b border-slate-800">
+        <span className="text-sm text-slate-400">Free Balance:</span>
+        <span className="font-semibold text-white">${freeUsdt.toFixed(2)} USDT</span>
+      </div>
+      <div className="flex justify-between items-center py-2 border-b border-slate-800">
+        <span className="text-sm text-amber-400">Active Capital:</span>
+        <span className="font-semibold text-amber-500">${allocatedUsdt.toFixed(2)} USDT</span>
+      </div>
+      <div className="pt-2">
+        {user ? (
+          <div className="flex justify-between items-center">
+            <span className="text-xs font-semibold text-white">
+              {user.email || user.username || 'Trader Account'}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="text-xs text-rose-400 flex items-center gap-1 hover:text-rose-300 transition-colors"
+            >
+              <LogOut className="w-3 h-3" /> Log Out
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setIsAuthOpen(true)}
+            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
+          >
+            <Key className="w-4 h-4" /> Sign In / Connect API
+          </button>
+        )}
+      </div>
+    </div>
+  )}
+</header>
+
+{/* HERO SECTION */}
+<section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+  <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-amber-500/20 rounded-2xl p-6 sm:p-8 relative overflow-hidden">
+    <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
+    <div className="max-w-2xl">
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/30 mb-4">
+        <ShieldCheck className="w-3.5 h-3.5" /> High-Tech Risk Management Protocol
+      </span>
+      <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+        Institutional Automation. <br className="hidden sm:inline" />
+        <span className="text-amber-500">Zero Manual Trades Required.</span>
+      </h2>
+      <p className="text-sm sm:text-base text-slate-300 mt-3 leading-relaxed">
+        Select an engine vault to join. Our dual-step EMA crossover mechanism continuously hunts high-probability momentum entries while strictly protecting capital with an automated 1.00% Hard Stop.
+      </p>
+    </div>
+  </div>
+</section>
 
       {/* LIVE ENGINE VAULTS GRID */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
