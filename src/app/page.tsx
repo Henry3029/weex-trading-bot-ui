@@ -20,11 +20,14 @@ import {
 import AuthModal from '@/components/AuthModal';
 import { EngineStatus, SystemLog, EngineType } from '@/types';
 
-const API_BASE_URL = typeof window !== 'undefined'
-  ? `http://${window.location.hostname}:3001`
-  : 'http://localhost:3001';
+// Fallback to localhost if env variable is missing
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
-const socket = io(API_BASE_URL);
+// Initialize socket connection
+export const socket = io(SOCKET_URL, {
+  autoConnect: true,
+  transports: ['websocket', 'polling'], // Fallback options for stability
+});
 
 export default function App() {
   // State Definitions
