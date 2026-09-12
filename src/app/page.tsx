@@ -9,6 +9,7 @@ import {
   LogOut, 
   Menu, 
   X, 
+  Key,
   ShieldCheck, 
   Layers, 
   RefreshCw, 
