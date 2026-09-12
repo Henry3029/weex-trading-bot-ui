@@ -87,7 +87,7 @@ export default function App() {
   isOpen={isAuthOpen}
   onClose={() => setIsAuthOpen(false)}
   onAuthSuccess={(userData) => setUser(userData)}
-  apiBaseUrl={API_BASE_URL}
+  apiBaseUrl={SOCKET_URL}
 />
 
 {/* HEADER / NAVIGATION */}
