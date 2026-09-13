@@ -15,7 +15,8 @@ import {
   RefreshCw, 
   ArrowUpRight, 
   ArrowDownRight, 
-  AlertCircle 
+  AlertCircle,
+  User
 } from 'lucide-react';
 import ConnectWeexModal from '@/components/ConnectWeexModal';
 import AuthModal from '@/components/AuthModal';
@@ -30,11 +31,19 @@ export const socket = io(SOCKET_URL, {
   transports: ['websocket', 'polling'], // Fallback options for stability
 });
 
+interface UserData {
+  id?: string;
+  email?: string;
+  username?: string;
+  weexConnected?: boolean;
+  [key: string]: any; // Allows dynamic properties from userData
+}
+
 export default function App() {
   // State Definitions
   const [isConnectWeexOpen, setIsConnectWeexOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoadingEngines, setIsLoadingEngines] = useState(false);
   const [engines, setEngines] = useState<any[]>([]);
