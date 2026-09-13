@@ -24,11 +24,6 @@ export default function AuthModal({
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // WEEX API Credentials States
-  const [apiKey, setApiKey] = useState('');
-  const [apiSecret, setApiSecret] = useState('');
-  const [passphrase, setPassphrase] = useState('');
-
   if (!isOpen) return null;
 
   // 1. Handle Registration
@@ -55,7 +50,13 @@ export default function AuthModal({
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      // 1. Check if the response content is actually JSON before parsing
+const contentType = res.headers.get('content-type');
+if (!contentType || !contentType.includes('application/json')) {
+  throw new Error(`Server returned non-JSON response (${res.status} ${res.statusText}). Check if backend process is running on AWS.`);
+}
+
+const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.error || 'Registration failed.');
@@ -69,48 +70,6 @@ export default function AuthModal({
       onClose();
     } catch (err: any) {
       setError(err.message || 'Failed to create account.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // 2. Handle WEEX API Key Connection
-  const handleConnectApiKeys = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (!apiKey || !apiSecret) {
-      setError('Please provide both your WEEX API Key and Secret Key.');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const res = await fetch(`${apiBaseUrl}/api/auth/weex-keys`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          apiKey: apiKey.trim(),
-          apiSecret: apiSecret.trim(),
-          passphrase: passphrase.trim(),
-        }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to validate WEEX API credentials.');
-      }
-
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-      }
-
-      onAuthSuccess(data.user || { id: 'weex-user', email: 'WEEX Trader', freeUsdtBalance: data.balance || 0 });
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Connection failed. Please check your WEEX API keys.');
     } finally {
       setLoading(false);
     }
@@ -135,7 +94,13 @@ export default function AuthModal({
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      // 1. Check if the response content is actually JSON before parsing
+const contentType = res.headers.get('content-type');
+if (!contentType || !contentType.includes('application/json')) {
+  throw new Error(`Server returned non-JSON response (${res.status} ${res.statusText}). Check if backend process is running on AWS.`);
+}
+
+const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.error || 'Invalid credentials.');
@@ -189,18 +154,8 @@ export default function AuthModal({
         </div>
 
         {/* 3-Tab Auth Switcher */}
-        <div className="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-xl mb-6 border border-slate-800 text-[11px]">
-          <button
-            type="button"
-            onClick={() => { setAuthMode('api_keys'); setError(null); }}
-            className={`py-2 rounded-lg font-semibold transition-all ${
-              authMode === 'api_keys'
-                ? 'bg-amber-500 text-slate-950 shadow-md'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            WEEX Keys
-          </button>
+        <div className="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl mb-6 border border-slate-800 text-[11px]">
+          
           <button
             type="button"
             onClick={() => { setAuthMode('login'); setError(null); }}
@@ -233,79 +188,7 @@ export default function AuthModal({
           </div>
         )}
 
-        {/* TAB 1: WEEX API KEYS FORM */}
-        {authMode === 'api_keys' && (
-          <form onSubmit={handleConnectApiKeys} className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                WEEX API Key
-              </label>
-              <div className="relative">
-                <Server className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g., wx_live_9a8b7c..."
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                WEEX Secret Key
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
-                <input
-                  type="password"
-                  required
-                  placeholder="••••••••••••••••••••"
-                  value={apiSecret}
-                  onChange={(e) => setApiSecret(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Passphrase <span className="text-slate-500 font-normal">(If set on WEEX)</span>
-              </label>
-              <div className="relative">
-                <Shield className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
-                <input
-                  type="password"
-                  placeholder="Optional passphrase"
-                  value={passphrase}
-                  onChange={(e) => setPassphrase(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
-                />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full mt-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold py-3.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Validating Exchange Keys...</span>
-                </>
-              ) : (
-                <>
-                  <Key className="w-4 h-4" />
-                  <span>Connect WEEX Bot Engine</span>
-                </>
-              )}
-            </button>
-          </form>
-        )}
-
+       
         {/* TAB 2: ACCOUNT LOGIN FORM */}
         {authMode === 'login' && (
           <form onSubmit={handleAccountLogin} className="space-y-4">

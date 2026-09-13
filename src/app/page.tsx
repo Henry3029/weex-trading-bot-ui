@@ -17,6 +17,7 @@ import {
   ArrowDownRight, 
   AlertCircle 
 } from 'lucide-react';
+import ConnectWeexModal from '@/components/ConnectWeexModal';
 import AuthModal from '@/components/AuthModal';
 import { EngineStatus, SystemLog, EngineType } from '@/types';
 
@@ -31,6 +32,7 @@ export const socket = io(SOCKET_URL, {
 
 export default function App() {
   // State Definitions
+  const [isConnectWeexOpen, setIsConnectWeexOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -90,6 +92,17 @@ export default function App() {
   apiBaseUrl={SOCKET_URL}
 />
 
+{/* ConnectWeexModal Overlay (Handles weex-key Registration) */}
+<ConnectWeexModal
+is open={isConnectWeexOpen}
+on lose={() => setIsConnectWeexOpen(false)}
+onSuccess={(userData) => {
+    // Merge new WEEX data into existing user state
+    setUser((prev) => (prev ? { ...prev, ...userData, weexConnected: true } : null));
+  }}
+apiBaseUrl={SOCKET_URL}
+/>
+
 {/* HEADER / NAVIGATION */}
 <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -119,35 +132,56 @@ export default function App() {
         <span className="font-semibold text-amber-500">${allocatedUsdt.toFixed(2)} USDT</span>
       </div>
 
-      {/* User Account / Login Toggle */}
-      {user ? (
-        <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
-          <div className="text-right">
-            <p className="text-xs font-semibold text-white">
-              {user.email || user.username || 'Trader Account'}
-            </p>
-            <p className="text-[11px] font-medium text-amber-500">
-              WEEX API Connected
-            </p>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
-            title="Log Out"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+ 
+        <div className="flex items-center space-x-3">
+          {user ? (
+            <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
+              <div className="text-right">
+                <p className="text-xs font-semibold text-white">
+                  {user.email || user.username || 'Trader Account'}
+                </p>
+
+                {/* Dynamic WEEX Connection Badge */}
+                {user.weexConnected ? (
+                  <button
+                    onClick={() => setIsConnectWeexOpen(true)}
+                    className="text-[11px] font-medium text-emerald-400 hover:underline flex items-center justify-end gap-1 ml-auto"
+                    title="Click to update WEEX Keys"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    WEEX API Connected
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setIsConnectWeexOpen(true)}
+                    className="text-[11px] font-semibold text-amber-500 hover:text-amber-400 hover:underline flex items-center justify-end gap-1 ml-auto"
+                  >
+                    <Key className="w-3 h-3" />
+                    Connect WEEX Keys
+                  </button>
+                )}
+              </div>
+
+              {/* Logout Action */}
+              <button
+                onClick={handleLogout}
+                className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
+                title="Log Out"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            /* Unauthenticated Action */
+            <button
+              onClick={() => setIsAuthOpen(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
+            >
+              <User className="w-4 h-4" />
+              <span>Sign In / Register</span>
+            </button>
+          )}
         </div>
-      ) : (
-        <button
-          onClick={() => setIsAuthOpen(true)}
-          className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
-        >
-          <Key className="w-4 h-4" />
-          <span>Sign In / Connect API</span>
-        </button>
-      )}
-    </div>
 
     {/* Mobile Menu Toggle */}
     <button 
