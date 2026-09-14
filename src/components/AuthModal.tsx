@@ -12,7 +12,7 @@ export default function AuthModal({
   isOpen, 
   onClose, 
   onAuthSuccess, 
-  apiBaseUrl = 'http://localhost:3001' 
+  apiBaseUrl = process.env.NEXT_PUBLIC_API_URL
 }: AuthModalProps) {
   // UI & Form Mode States
   const [loading, setLoading] = useState(false);

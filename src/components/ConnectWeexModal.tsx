@@ -12,7 +12,7 @@ export default function ConnectWeexModal({
   isOpen,
   onClose,
   onSuccess,
-  apiBaseUrl = 'http://localhost:3001',
+  apiBaseUrl =process.env.NEXT_PUBLIC_API_URL
 }: ConnectWeexModalProps) {
   const [apiKey, setApiKey] = useState('');
   const [apiSecret, setApiSecret] = useState('');
