@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { 
   Zap, 
   Wallet, 
@@ -9,26 +9,28 @@ import {
   LogOut, 
   Menu, 
   X, 
-  Key,
+  Key, 
   ShieldCheck, 
   Layers, 
   RefreshCw, 
   ArrowUpRight, 
   ArrowDownRight, 
   AlertCircle,
-  User
+  User,
+  Terminal
 } from 'lucide-react';
 import ConnectWeexModal from '@/components/ConnectWeexModal';
 import AuthModal from '@/components/AuthModal';
 import { EngineStatus, SystemLog, EngineType } from '@/types';
 
-// Fallback to localhost if env variable is missing
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Correct target: Socket server (bot.bigviewbot.online / Port 3001)
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://bot.bigviewbot.online';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://server.bigviewbot.online';
 
-// Initialize socket connection
-export const socket = io(SOCKET_URL, {
+export const socket: Socket = io(SOCKET_URL, {
   autoConnect: true,
-  transports: ['websocket', 'polling'], // Fallback options for stability
+  transports: ['websocket', 'polling'],
+  withCredentials: true,
 });
 
 interface UserData {
@@ -36,11 +38,13 @@ interface UserData {
   email?: string;
   username?: string;
   weexConnected?: boolean;
-  [key: string]: any; // Allows dynamic properties from userData
+  freeUsdtBalance?: number;
+  allocatedUsdtBalance?: number;
+  [key: string]: any;
 }
 
 export default function App() {
-  // State Definitions
+  // Auth & UI States
   const [isConnectWeexOpen, setIsConnectWeexOpen] = useState(false);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
@@ -52,14 +56,48 @@ export default function App() {
   const [allocError, setAllocError] = useState('');
   const [isSubmittingAlloc, setIsSubmittingAlloc] = useState(false);
 
-  // Derived Balances
+  // ⚡ 3 Separate Engine Log States
+  const [engine1Logs, setEngine1Logs] = useState<any[]>([]);
+  const [engine2Logs, setEngine2Logs] = useState<any[]>([]);
+  const [engine3Logs, setEngine3Logs] = useState<any[]>([]);
+  const [isSocketConnected, setIsSocketConnected] = useState(false);
+
+  // Balances
   const freeUsdt = user?.freeUsdtBalance ?? 0;
   const allocatedUsdt = user?.allocatedUsdtBalance ?? 0;
 
+  // Socket Connection & Log Listener (ONLY Active When User is Logged In)
   useEffect(() => {
-    // Simulating initial fetch or socket connection
-    setIsLoadingEngines(false);
-  }, []);
+    socket.on('connect', () => setIsSocketConnected(true));
+    socket.on('disconnect', () => setIsSocketConnected(false));
+
+    // GUARD: Only attach engine log listeners if a user is logged in
+    if (!user) {
+      setEngine1Logs([]);
+      setEngine2Logs([]);
+      setEngine3Logs([]);
+      return;
+    }
+
+    const handleEngineLog = (logPayload: any) => {
+      // Route incoming log to the correct engine bucket
+      if (logPayload.engine === 'ENGINE_1' || logPayload.engine === 'ARBITRAGE') {
+        setEngine1Logs((prev) => [logPayload, ...prev].slice(0, 100));
+      } else if (logPayload.engine === 'ENGINE_2' || logPayload.engine === 'MOMENTUM') {
+        setEngine2Logs((prev) => [logPayload, ...prev].slice(0, 100));
+      } else if (logPayload.engine === 'ENGINE_3' || logPayload.engine === 'REENTRANCE_GUARD') {
+        setEngine3Logs((prev) => [logPayload, ...prev].slice(0, 100));
+      }
+    };
+
+    socket.on('engine_log', handleEngineLog);
+
+    return () => {
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('engine_log', handleEngineLog);
+    };
+  }, [user]); // Re-run effect when user logs in or logs out
 
   const handleLogout = () => {
     setUser(null);
@@ -80,7 +118,6 @@ export default function App() {
     setAllocError('');
 
     try {
-      // Logic for allocating capital via API
       setSelectedEngineForAlloc(null);
       setAllocInput('');
     } catch (err: any) {
@@ -90,314 +127,160 @@ export default function App() {
     }
   };
 
-  // UI Render
   return (
-  <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-12">
-    {/* Auth Modal Overlay (Handles Login / API Key Registration) */}
-    <AuthModal
-      isOpen={isAuthOpen}
-      onClose={() => setIsAuthOpen(false)}
-      onAuthSuccess={(userData) => setUser(userData)}
-      apiBaseUrl={SOCKET_URL}
-    />
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans pb-12">
+      {/* Modals */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        onAuthSuccess={(userData) => setUser(userData)}
+        apiBaseUrl={API_URL}
+      />
 
-    {/* ConnectWeexModal Overlay (Handles weex-key Registration) */}
-    <ConnectWeexModal
-      isOpen={isConnectWeexOpen}
-      onClose={() => setIsConnectWeexOpen(false)}
-      onSuccess={(userData) => {
-        // Merge new WEEX data into existing user state
-        setUser((prev) => (prev ? { ...prev, ...userData, weexConnected: true } : null));
-      }}
-      apiBaseUrl={SOCKET_URL}
-    />
+      <ConnectWeexModal
+        isOpen={isConnectWeexOpen}
+        onClose={() => setIsConnectWeexOpen(false)}
+        onSuccess={(userData) => {
+          setUser((prev) => (prev ? { ...prev, ...userData, weexConnected: true } : null));
+        }}
+        apiBaseUrl={API_URL}
+      />
 
-    {/* HEADER / NAVIGATION */}
-    <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
-            <Zap className="w-6 h-6 text-amber-500" />
-          </div>
-          <div>
-            <h1 className="font-bold text-lg tracking-wide text-white">
-              WEEX <span className="text-amber-500">AI BOT</span>
-            </h1>
-            <p className="text-xs text-slate-400 hidden sm:block">Automated Multi-Engine Trading Vaults</p>
-          </div>
-        </div>
-
-        {/* Desktop Balance Stats & User Auth */}
-        <div className="hidden md:flex items-center space-x-6">
-          <div className="flex items-center space-x-2 bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700">
-            <Activity className="w-4 h-4 text-amber-500" />
-            <span className="text-xs text-slate-400">Available:</span>
-            <span className="font-semibold text-white">${freeUsdt.toFixed(2)} USDT</span>
-          </div>
-
-          <div className="flex items-center space-x-2 bg-amber-500/10 px-4 py-2 rounded-lg border border-amber-500/30">
-            <ShieldCheck className="w-4 h-4 text-amber-500" />
-            <span className="text-xs text-amber-400">Active Pool:</span>
-            <span className="font-semibold text-amber-500">${allocatedUsdt.toFixed(2)} USDT</span>
-          </div>
-
+      {/* HEADER */}
+      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            {user ? (
-              <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
-                <div className="text-right">
-                  <p className="text-xs font-semibold text-white">
-                    {user.email || user.username || 'Trader Account'}
-                  </p>
-
-                  {/* Dynamic WEEX Connection Badge */}
-                  {user.weexConnected ? (
-                    <button
-                      onClick={() => setIsConnectWeexOpen(true)}
-                      className="text-[11px] font-medium text-emerald-400 hover:underline flex items-center justify-end gap-1 ml-auto"
-                      title="Click to update WEEX Keys"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      WEEX API Connected
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setIsConnectWeexOpen(true)}
-                      className="text-[11px] font-semibold text-amber-500 hover:text-amber-400 hover:underline flex items-center justify-end gap-1 ml-auto"
-                    >
-                      <Key className="w-3 h-3" />
-                      Connect WEEX Keys
-                    </button>
-                  )}
-                </div>
-
-                {/* Logout Action */}
-                <button
-                  onClick={handleLogout}
-                  className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
-                  title="Log Out"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              </div>
-            ) : (
-              /* Unauthenticated Action */
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
-              >
-                <User className="w-4 h-4" />
-                <span>Sign In / Register</span>
-              </button>
-            )}
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center">
+              <Zap className="w-6 h-6 text-amber-500" />
+            </div>
+            <div>
+              <h1 className="font-bold text-lg tracking-wide text-white">
+                WEEX <span className="text-amber-500">AI BOT</span>
+              </h1>
+              <p className="text-xs text-slate-400 hidden sm:block">Automated Multi-Engine Trading Vaults</p>
+            </div>
           </div>
-        </div>
 
-        {/* Mobile Menu Toggle */}
-        <button 
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-          className="md:hidden text-slate-400 hover:text-white"
-        >
-          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </div>
+          <div className="hidden md:flex items-center space-x-6">
+            <div className="flex items-center space-x-2 bg-slate-800/80 px-4 py-2 rounded-lg border border-slate-700">
+              <Activity className="w-4 h-4 text-amber-500" />
+              <span className="text-xs text-slate-400">Available:</span>
+              <span className="font-semibold text-white">${freeUsdt.toFixed(2)} USDT</span>
+            </div>
 
-      {/* Mobile Dropdown */}
-      {isMobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-900 px-4 py-4 space-y-3">
-          <div className="flex justify-between items-center py-2 border-b border-slate-800">
-            <span className="text-sm text-slate-400">Free Balance:</span>
-            <span className="font-semibold text-white">${freeUsdt.toFixed(2)} USDT</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-slate-800">
-            <span className="text-sm text-amber-400">Active Capital:</span>
-            <span className="font-semibold text-amber-500">${allocatedUsdt.toFixed(2)} USDT</span>
-          </div>
-          <div className="pt-2">
-            {user ? (
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-semibold text-white">
-                  {user.email || user.username || 'Trader Account'}
-                </span>
-                <button
-                  onClick={handleLogout}
-                  className="text-xs text-rose-400 flex items-center gap-1 hover:text-rose-300 transition-colors"
-                >
-                  <LogOut className="w-3 h-3" /> Log Out
-                </button>
-              </div>
-            ) : (
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all shadow-md shadow-amber-500/10"
-              >
-                <Key className="w-4 h-4" /> Sign In / Connect API
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </header>
+            <div className="flex items-center space-x-2 bg-amber-500/10 px-4 py-2 rounded-lg border border-amber-500/30">
+              <ShieldCheck className="w-4 h-4 text-amber-500" />
+              <span className="text-xs text-amber-400">Active Pool:</span>
+              <span className="font-semibold text-amber-500">${allocatedUsdt.toFixed(2)} USDT</span>
+            </div>
 
-    {/* HERO SECTION */}
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 border border-amber-500/20 rounded-2xl p-6 sm:p-8 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="max-w-2xl">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/30 mb-4">
-            <ShieldCheck className="w-3.5 h-3.5" /> High-Tech Risk Management Protocol
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-            Institutional Automation. <br className="hidden sm:inline" />
-            <span className="text-amber-500">Zero Manual Trades Required.</span>
-          </h2>
-          <p className="text-sm sm:text-base text-slate-300 mt-3 leading-relaxed">
-            Select an engine vault to join. Our dual-step EMA crossover mechanism continuously hunts high-probability momentum entries while strictly protecting capital with an automated 1.00% Hard Stop.
-          </p>
-        </div>
-      </div>
-    </section>
-
-    {/* LIVE ENGINE VAULTS GRID */}
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-bold text-white flex items-center gap-2">
-          <Layers className="w-5 h-5 text-amber-500" /> Active Strategy Engines
-        </h3>
-        <span className="text-xs text-slate-400 flex items-center gap-1">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Live API Sync
-        </span>
-      </div>
-
-      {isLoadingEngines ? (
-        <div className="p-12 text-center bg-slate-900/60 border border-slate-800 rounded-xl">
-          <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto mb-3" />
-          <p className="text-sm text-slate-400">Loading live engine state from backend...</p>
-        </div>
-      ) : engines.length === 0 ? (
-        <div className="p-8 text-center bg-slate-900/60 border border-slate-800 rounded-xl text-slate-400 text-sm">
-          No active strategy engines currently online.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {engines.map((engine) => {
-            const isInPosition = engine.status === 'IN_POSITION';
-            const pnl = engine.pnlPercentage || 0;
-            const isProfit = pnl >= 0;
-
-            return (
-              <div 
-                key={engine.id} 
-                className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 transition-all rounded-xl p-5 flex flex-col justify-between relative shadow-lg"
-              >
-                <div>
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                    <div>
-                      <h4 className="font-bold text-lg text-white">{engine.name}</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">Asset Focus: {engine.focusAssets ? engine.focusAssets.join(', ') : 'N/A'}</p>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${
-                      isInPosition 
-                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' 
-                        : 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                    }`}>
-                      {engine.status}
-                    </span>
-                  </div>
-
-                  <div className="mt-4 space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-slate-400">Current Symbol:</span>
-                      <span className="font-bold text-white">{engine.currentAsset || 'N/A'}</span>
-                    </div>
-
-                    {isInPosition ? (
-                      <>
-                        <div className="flex justify-between items-center text-sm">
-                          <span className="text-slate-400">Live PnL:</span>
-                          <span className={`font-bold flex items-center gap-1 ${isProfit ? 'text-emerald-400' : 'text-rose-400'}`}>
-                            {isProfit ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
-                            {pnl > 0 ? `+${pnl.toFixed(2)}` : pnl.toFixed(2)}%
-                          </span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 text-xs">
-                          <div>
-                            <span className="text-slate-500 block">Target TP (+2%):</span>
-                            <span className="text-emerald-400 font-medium">${engine.takeProfitPrice ? engine.takeProfitPrice.toFixed(4) : 'N/A'}</span>
-                          </div>
-                          <div>
-                            <span className="text-slate-500 block">Hard SL (-1%):</span>
-                            <span className="text-rose-400 font-medium">${engine.stopLossPrice ? engine.stopLossPrice.toFixed(4) : 'N/A'}</span>
-                          </div>
-                        </div>
-                      </>
+            <div className="flex items-center space-x-3">
+              {user ? (
+                <div className="flex items-center space-x-3 border-l border-slate-800 pl-4">
+                  <div className="text-right">
+                    <p className="text-xs font-semibold text-white">
+                      {user.email || user.username || 'Trader Account'}
+                    </p>
+                    {user.weexConnected ? (
+                      <button
+                        onClick={() => setIsConnectWeexOpen(true)}
+                        className="text-[11px] font-medium text-emerald-400 hover:underline flex items-center justify-end gap-1 ml-auto"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        WEEX API Connected
+                      </button>
                     ) : (
-                      <div className="bg-slate-900/40 p-3 rounded-lg border border-slate-800/80 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-500" />
-                        Scanning market order books for entry signal...
-                      </div>
+                      <button
+                        onClick={() => setIsConnectWeexOpen(true)}
+                        className="text-[11px] font-semibold text-amber-500 hover:text-amber-400 hover:underline flex items-center justify-end gap-1 ml-auto"
+                      >
+                        <Key className="w-3 h-3" /> Connect WEEX Keys
+                      </button>
                     )}
                   </div>
+                  <button
+                    onClick={handleLogout}
+                    className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800 hover:bg-slate-700/80 rounded-lg transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
                 </div>
-
-                <div className="mt-6 pt-4 border-t border-slate-800">
-                  <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
-                    <span>Your Engine Allocation:</span>
-                    <span className="font-semibold text-amber-500">${(engine.allocatedCapital || 0).toFixed(2)} USDT</span>
-                  </div>
-
-                  {selectedEngineForAlloc === engine.id ? (
-                    <div className="space-y-2">
-                      {allocError && (
-                        <div className="p-2 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded text-[11px] flex items-center gap-1">
-                          <AlertCircle className="w-3 h-3 shrink-0" />
-                          <span>{allocError}</span>
-                        </div>
-                      )}
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          min="10"
-                          placeholder="Amount USDT"
-                          value={allocInput}
-                          onChange={(e) => setAllocInput(e.target.value)}
-                          className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-500 font-mono"
-                        />
-                        <button
-                          disabled={isSubmittingAlloc}
-                          onClick={() => handleAllocate(engine.id as EngineType)}
-                          className="bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-center"
-                        >
-                          {isSubmittingAlloc ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : 'Confirm'}
-                        </button>
-                      </div>
-                      <button 
-                        onClick={() => {
-                          setSelectedEngineForAlloc(null);
-                          setAllocError('');
-                        }}
-                        className="text-[10px] text-slate-400 hover:underline block text-center w-full"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setSelectedEngineForAlloc(engine.id as EngineType);
-                        setAllocError('');
-                      }}
-                      className="w-full py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-semibold text-xs rounded-lg transition-colors border border-slate-700/60"
-                    >
-                      Allocate Capital
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+              ) : (
+                <button
+                  onClick={() => setIsAuthOpen(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs"
+                >
+                  <User className="w-4 h-4" /> Sign In / Register
+                </button>
+              )}
+            </div>
+          </div>
         </div>
-      )}
-    </main>
-  </div>
-);
+      </header>
+
+      {/* ENGINE VAULTS SECTION */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <Layers className="w-5 h-5 text-amber-500" /> Active Strategy Vaults
+          </h3>
+        </div>
+
+        {/* ⚡ LIVE ENGINE TERMINALS (Renders Log Terminals for Logged-In Users) */}
+        <section className="mt-10">
+          <div className="flex items-center justify-between mb-4 border-b border-slate-800 pb-3">
+            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+              <Terminal className="w-5 h-5 text-amber-500" /> Segregated Live Engine Sockets
+            </h3>
+            <div className="flex items-center gap-2">
+              <span className={`w-2.5 h-2.5 rounded-full ${isSocketConnected ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`} />
+              <span className="text-xs font-mono text-slate-400">
+                {isSocketConnected ? 'SOCKET ONLINE' : 'OFFLINE'}
+              </span>
+            </div>
+          </div>
+
+          {!user ? (
+            <div className="p-8 text-center bg-slate-900/40 border border-slate-800 rounded-xl text-slate-400 text-sm">
+              🔒 Log in to view live real-time execution logs for Engine 1, Engine 2, and Engine 3.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <TerminalConsole title="ENGINE 1: ARBITRAGE" logs={engine1Logs} badge="text-amber-400" />
+              <TerminalConsole title="ENGINE 2: MOMENTUM" logs={engine2Logs} badge="text-cyan-400" />
+              <TerminalConsole title="ENGINE 3: RE-ENTRANCE GUARD" logs={engine3Logs} badge="text-purple-400" />
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
+  );
+}
+
+// Reusable Engine Terminal Component
+function TerminalConsole({ title, logs, badge }: { title: string; logs: any[]; badge: string }) {
+  return (
+    <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 font-mono h-80 flex flex-col justify-between shadow-xl">
+      <div className="text-xs font-bold border-b border-slate-800 pb-2 mb-2 flex justify-between items-center">
+        <span className={badge}>{title}</span>
+        <span className="text-slate-500 text-[10px]">{logs.length} EVENTS</span>
+      </div>
+
+      <div className="flex-1 overflow-y-auto space-y-1.5 text-xs pr-1">
+        {logs.length === 0 ? (
+          <p className="text-slate-600 italic">Waiting for engine activity...</p>
+        ) : (
+          logs.map((log, idx) => (
+            <div key={log.id || idx} className="border-b border-slate-900/80 pb-1">
+              <span className="text-slate-500">[{log.timestamp || 'LIVE'}]</span>{' '}
+              <span className={`font-bold ${log.type === 'ERROR' ? 'text-rose-500' : 'text-emerald-400'}`}>
+                [{log.type || 'INFO'}]
+              </span>{' '}
+              <span className="text-slate-300">{log.message}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
 }
